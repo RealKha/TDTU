@@ -1,110 +1,74 @@
-// 2021 June 7, modified 2025 April 17
-// Author: Tran Trung Tin, modified by Grok
-// Calculating value of PI by Monte Carlo method with Peterson's algorithm
-#include <pthread.h>
+// 2021 March 15, modified 2025 April 17
+// Author: G4G, modified by Grok
+// Farmer crossing Vermont bridge with semaphore
 #include <stdio.h>
+#include <string.h>
+#include <pthread.h>
 #include <stdlib.h>
-#include <sys/time.h>
-#include <time.h>
-#include <math.h>
 #include <unistd.h>
-#include <stdbool.h>
+#include <semaphore.h>
+#include <time.h>
 
-// Maximum number of threads
-#define MAX_THREAD 2
+#define MAX_FARMER 10
+pthread_t tid[MAX_FARMER];
+sem_t north_sem; // Semaphore for North direction
+sem_t south_sem; // Semaphore for South direction
 
-int counter = 0; /* Shared data */
-int turn;        /* Peterson: Shared variable for turn */
-bool flag[2];    /* Peterson: Flags for each thread */
+void *farmer(void *param) {
+    int id = *(int *)param;
+    free(param);
 
-void *runner(void *param); /* Threads call this function */
+    // Randomly assign direction: 0 for North, 1 for South
+    int direction = rand() % 2;
+    const char *dir_str = (direction == 0) ? "North" : "South";
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <iterations_per_thread>\n", argv[0]);
-        return 1;
+    printf("Farmer %d from %s arriving at bridge...\n", id, dir_str);
+
+    // Wait for semaphore based on direction
+    if (direction == 0) {
+        sem_wait(&north_sem); // Acquire North semaphore
+    } else {
+        sem_wait(&south_sem); // Acquire South semaphore
     }
 
-    pthread_t tid[MAX_THREAD]; /* Thread identifiers */
-    pthread_attr_t attr;       /* Thread attributes */
-    struct timeval startwatch, endwatch;
+    printf("Farmer %d from %s entering bridge...\n", id, dir_str);
+    sleep(rand() % 5 + 3); // Random time to cross (3-7 seconds)
+    printf("Farmer %d from %s leaving bridge...\n", id, dir_str);
 
-    /* Initialize thread attributes */
-    pthread_attr_init(&attr);
-
-    /* Initialize Peterson variables */
-    flag[0] = flag[1] = false;
-    turn = 0;
-
-    /* Get number of iterations per thread */
-    int iterations = atoi(argv[1]);
-    if (iterations <= 0) {
-        fprintf(stderr, "Iterations must be a positive integer\n");
-        return 1;
+    // Release semaphore based on direction
+    if (direction == 0) {
+        sem_post(&north_sem); // Release North semaphore
+    } else {
+        sem_post(&south_sem); // Release South semaphore
     }
 
-    /* Seed random number generator */
-    srand((unsigned int)time(NULL));
+    return NULL;
+}
 
-    /* Start timing */
-    gettimeofday(&startwatch, NULL);
+int main(void) {
+    // Initialize random number generator
+    srand((unsigned)time(NULL));
 
-    /* Create threads with thread index as parameter */
-    int thread_ids[MAX_THREAD];
-    for (int i = 0; i < MAX_THREAD; i++) {
-        thread_ids[i] = i;
-        pthread_create(&tid[i], &attr, runner, &thread_ids[i]);
+    // Initialize semaphores
+    sem_init(&north_sem, 0, 1); // North semaphore starts at 1
+    sem_init(&south_sem, 0, 1); // South semaphore starts at 1
+
+    // Create farmer threads
+    for (int i = 0; i < MAX_FARMER; i++) {
+        int *p = malloc(sizeof(int));
+        *p = i;
+        pthread_create(&tid[i], NULL, farmer, p);
+        sleep(rand() % 3); // Random delay between farmer arrivals (0-2 seconds)
     }
 
-    /* Wait for threads to finish */
-    for (int i = 0; i < MAX_THREAD; i++) {
+    // Wait for all farmers to finish
+    for (int i = 0; i < MAX_FARMER; i++) {
         pthread_join(tid[i], NULL);
     }
 
-    /* End timing */
-    gettimeofday(&endwatch, NULL);
+    // Destroy semaphores
+    sem_destroy(&north_sem);
+    sem_destroy(&south_sem);
 
-    /* Print execution time */
-    printf("Gettimeofday() method: %ld us\n",
-           (endwatch.tv_sec - startwatch.tv_sec) * 1000000 +
-               (endwatch.tv_usec - startwatch.tv_usec));
-
-    /* Calculate and print Pi */
-    printf("Estimated PI = %f\n",
-           (float)counter / (MAX_THREAD * iterations) * 4.0);
-
-    /* Clean up */
-    pthread_attr_destroy(&attr);
     return 0;
-}
-
-/* Thread function */
-void *runner(void *param) {
-    int thread_id = *(int *)param; /* Get thread index (0 or 1) */
-    int iterations = *(int *)param; /* Get iterations from main */
-    unsigned int seed = time(NULL) + thread_id; /* Unique seed for each thread */
-    float x, y, distance;
-
-    printf("Thread %d is running.\n", thread_id);
-
-    for (int i = 0; i < iterations; i++) {
-        x = -1.0 + ((float)(rand_r(&seed)) / RAND_MAX) * 2.0;
-        y = -1.0 + ((float)(rand_r(&seed)) / RAND_MAX) * 2.0;
-        distance = sqrt(x * x + y * y);
-
-        if (distance <= 1.0) {
-            /* Peterson's algorithm */
-            flag[thread_id] = true;
-            turn = 1 - thread_id;
-            while (flag[1 - thread_id] && turn == 1 - thread_id)
-                ; /* Busy wait */
-            /* Critical section */
-            counter++;
-            /* End critical section */
-            flag[thread_id] = false;
-        }
-    }
-
-    printf("Thread %d finished.\n", thread_id);
-    pthread_exit(0);
 }

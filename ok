@@ -1,6 +1,5 @@
-Bài tập 2:
-Hàng rào bộ nhớ (pthread_barrier) không phù hợp để đồng bộ hóa trong bài toán Producer-Consumer vì:
-•	Nó không hỗ trợ đồng bộ hóa dựa trên điều kiện (bộ đệm rỗng/đầy).
-•	Nó yêu cầu tất cả các tiểu trình chờ nhau tại một điểm cố định, không phù hợp với tính chất không đồng bộ của producer và consumer.
-•	Nó không bảo vệ được bộ đệm khỏi truy cập đồng thời.
-Thay vào đó, nên sử dụng mutex kết hợp với condition variables hoặc semaphores để đảm bảo đồng bộ hóa chính xác và hiệu quả trong bài toán Producer-Consumer.
+Kết quả đầu ra của chương trình task5_1_WR_SEM.c phản ánh bài toán Reader-Writer sử dụng semaphore để đồng bộ hóa:
+
+Ban đầu: 5 luồng (3 reader: 1, 3, 4; 2 writer: 2, 5) được tạo. Reader 1 bắt đầu đọc trước, khóa tài nguyên (wrt), nên các luồng khác (reader 3, 4 và writer 2, 5) phải chờ.
+Tiếp theo: Reader 3 và 4 cùng đọc (do reader có thể đọc đồng thời). Sau khi reader 1, 3, 4 kết thúc, tài nguyên được giải phóng (wrt), writer 2 bắt đầu ghi (khóa tài nguyên), writer 5 phải chờ.
+Cuối cùng: Writer 2 kết thúc, writer 5 ghi. Trình tự này đảm bảo writer độc quyền truy cập tài nguyên, còn reader có thể đọc đồng thời nhưng phải chờ writer hoàn thành.

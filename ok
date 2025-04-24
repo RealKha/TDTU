@@ -1,0 +1,6 @@
+Bài tập 2:
+Hàng rào bộ nhớ (pthread_barrier) không phù hợp để đồng bộ hóa trong bài toán Producer-Consumer vì:
+•	Nó không hỗ trợ đồng bộ hóa dựa trên điều kiện (bộ đệm rỗng/đầy).
+•	Nó yêu cầu tất cả các tiểu trình chờ nhau tại một điểm cố định, không phù hợp với tính chất không đồng bộ của producer và consumer.
+•	Nó không bảo vệ được bộ đệm khỏi truy cập đồng thời.
+Thay vào đó, nên sử dụng mutex kết hợp với condition variables hoặc semaphores để đảm bảo đồng bộ hóa chính xác và hiệu quả trong bài toán Producer-Consumer.

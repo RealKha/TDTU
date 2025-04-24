@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   struct timeval startwatch, endwatch;
   int n_thread = atoi(argv[1]);
 
-  /* initialize the barrier */
+
   pthread_barrier_init(&barrier, NULL, n_thread + 1); /* +1 for the main thread */
 
   /* set the default attributes of the thread */
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < n_thread; i++)
     pthread_create(&tid[i], NULL, runner, argv[2]);
 
-  /* main thread waits at the barrier */
+
   pthread_barrier_wait(&barrier);
 
   gettimeofday(&endwatch, NULL);
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
   printf("\nGettimeofday() method: %ldus", (endwatch.tv_sec - startwatch.tv_sec) * 1000000 + (endwatch.tv_usec - startwatch.tv_usec));
   printf("\nUoc tinh PI = %f\n", (float)counter / (n_thread * atoi(argv[2])) * 4);
 
-  /* destroy the barrier */
+
   pthread_barrier_destroy(&barrier);
 
   return 0;
@@ -67,7 +67,7 @@ void *runner(void *param) {
 
   printf("\nThread %d finished.", tid);
 
-  /* thread waits at the barrier */
+
   pthread_barrier_wait(&barrier);
 
   pthread_exit(0);
